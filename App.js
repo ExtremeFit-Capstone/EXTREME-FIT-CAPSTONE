@@ -1,11 +1,20 @@
+
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
+import { createStackNavigator } from '@react-navigation/stack';
+import WelcomeScreen from './screens/Welcome';
 import Navbar from './components/Navbar.js';
+
+
+const Stack = createStackNavigator();
 
 export default function App() {
   return (
     <NavigationContainer>
-      <Navbar />
+      <Stack.Navigator initialRouteName="Welcome" screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="Welcome" component={WelcomeScreen} />
+        <Stack.Screen name="Main" component={Navbar} />
+      </Stack.Navigator>
     </NavigationContainer>
   );
 }

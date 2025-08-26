@@ -1,9 +1,15 @@
+
+// Bag.js - Shopping cart screen with PayPal integration
+// Author: Extreme Fit Capstone Team
+//
+// This screen displays the user's shopping cart, allows quantity adjustments, and handles checkout via PayPal.
+
 import React, { useState, useMemo } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, SafeAreaView, Alert, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Colors from '../colors';
 
-// Only import PayPal on native platforms
+// Only import PayPal on native platforms (not web)
 let PayPal = null;
 if (Platform.OS !== 'web') {
   try {
@@ -13,15 +19,19 @@ if (Platform.OS !== 'web') {
   }
 }
 
+
 export default function BagScreen() {
+  // Flat shipping cost for all orders
   const SHIPPING_COST = 15.00;
 
+  // State: cartItems holds the list of products in the cart
   const [cartItems, setCartItems] = useState([
     { id: 1, name: 'Athletic Gear 1', details: 'Size L - Black', price: 45.99, quantity: 2 },
     { id: 2, name: 'Athletic Gear 2', details: 'Size M - Red', price: 52.99, quantity: 1 },
     { id: 3, name: 'Athletic Gear 3', details: 'Size XL - Blue', price: 38.95, quantity: 3 },
   ]);
 
+  // Increase quantity of a cart item by 1
   const incrementQuantity = (id) => {
     setCartItems(items => 
       items.map(item => 
@@ -30,6 +40,7 @@ export default function BagScreen() {
     );
   };
 
+  // Decrease quantity of a cart item by 1 (minimum 1)
   const decrementQuantity = (id) => {
     setCartItems(items => 
       items.map(item => 
@@ -38,6 +49,13 @@ export default function BagScreen() {
     );
   };
 
+  /**
+   * Handles PayPal payment process.
+   * - On web: shows a demo alert.
+   * - On native: uses react-native-paypal if available.
+   * - On success: clears the cart.
+   * - On failure: shows error alert.
+   */
   const handlePayPalPayment = () => {
     if (Platform.OS === 'web') {
       // For web platform, show a demo success message
@@ -66,6 +84,7 @@ export default function BagScreen() {
       return;
     }
 
+    // Payment data for PayPal
     const paymentData = {
       amount: total.toFixed(2),
       currency: 'USD',
@@ -74,6 +93,7 @@ export default function BagScreen() {
       environment: 'sandbox' // Use 'production' for live payments
     };
 
+    // Initiate PayPal payment
     PayPal.payWithPayPal(paymentData)
       .then((response) => {
         console.log('Payment successful:', response);
@@ -101,33 +121,44 @@ export default function BagScreen() {
       });
   };
 
+  /**
+   * Memoized calculation of subtotal and total items in the cart.
+   * subtotal: total price of all items
+   * totalItems: total quantity of all items
+   */
   const { subtotal, totalItems } = useMemo(() => {
     const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
     return { subtotal, totalItems };
   }, [cartItems]);
 
+  // Total cost including shipping
   const total = subtotal + SHIPPING_COST;
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
+        {/* Header section */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>🛒 My Cart</Text>
           <Text style={styles.headerSubtitle}>{totalItems} items</Text>
         </View>
 
+        {/* Cart items list */}
         <View style={styles.cartItems}>
           {cartItems.map((item) => (
             <View key={item.id} style={styles.cartItem}>
+              {/* Product image placeholder */}
               <View style={styles.productImage}>
                 <Text style={styles.productImageText}>📦</Text>
               </View>
+              {/* Product info */}
               <View style={styles.productInfo}>
                 <Text style={styles.productName}>{item.name}</Text>
                 <Text style={styles.productDetails}>{item.details}</Text>
                 <Text style={styles.productPrice}>${item.price.toFixed(2)}</Text>
               </View>
+              {/* Quantity controls */}
               <View style={styles.quantityControls}>
                 <TouchableOpacity 
                   style={styles.quantityButton}
@@ -147,6 +178,7 @@ export default function BagScreen() {
           ))}
         </View>
 
+        {/* Order summary section */}
         <View style={styles.summary}>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Subtotal:</Text>
@@ -162,6 +194,7 @@ export default function BagScreen() {
           </View>
         </View>
 
+        {/* PayPal checkout button */}
         <TouchableOpacity style={styles.checkoutButton} onPress={handlePayPalPayment}>
           <Text style={styles.checkoutButtonText}>Pay with PayPal</Text>
           <Ionicons name="logo-paypal" size={20} color={Colors.whiteText} />
@@ -171,6 +204,7 @@ export default function BagScreen() {
   );
 }
 
+// Styles for the Bag screen UI components
 const styles = StyleSheet.create({
   container: {
     flex: 1,

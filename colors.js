@@ -10,6 +10,7 @@ const Colors = {
   // Background colors
   lightBackground: '#f8f4ee',
   whiteBackground: '#ffffff',
+  white: 'white',
   
   // Border colors
   lightBorder: '#e5e5e5',
