@@ -2,15 +2,17 @@ import React from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, ImageBackground, Platform } from 'react-native';
 import Colors from '../colors';
 
+
 export default function WelcomeScreen({ navigation }) {
   const handleCreateAccount = () => {
-    // Navigate to account creation screen
-    navigation.navigate('CreateAccount');
-    console.log('Create Account pressed');
+    navigation.navigate('CreateAccountPage');
+  };
+
+  const handleLogInAccount = () => {
+    navigation.navigate('LogInPage');
   };
 
   const handleContinueAsGuest = () => {
-    // Navigate to the main app - will automatically show Home tab (first tab)
     navigation.navigate('Main');
   };
 
@@ -43,7 +45,7 @@ export default function WelcomeScreen({ navigation }) {
           <Text style={styles.createAccountText}>CREATE ACCOUNT</Text>
         </TouchableOpacity>
         
-        <TouchableOpacity style={styles.loginButton} onPress={handleCreateAccount}>
+        <TouchableOpacity style={styles.loginButton} onPress={handleLogInAccount}>
           <Text style={styles.loginText}>LOG IN</Text>
         </TouchableOpacity>
 
