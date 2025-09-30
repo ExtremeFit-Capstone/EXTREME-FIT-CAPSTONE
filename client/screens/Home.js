@@ -4,14 +4,34 @@ import { StyleSheet, Text, View, Image } from 'react-native';
 import Colors from '../colors';
 // Puedes cambiar el nombre del archivo si quieres otra imagen
 import logo from '../assets/Extreme_fit_new_logo-07.png';
+import { SignedIn, SignedOut, useUser } from '@clerk/clerk-expo';
+import { Link } from 'expo-router';
+import { SignOutButton } from '../components/SignOutButton';
 
 export default function HomeScreen() {
+  const { user } = useUser();
   return (
     <View style={styles.screen}>
       <Text style={styles.screenTitle}>🏠 Home</Text>
       {/* Imagen centrada en la pantalla */}
       <Image source={logo} style={styles.centerImage} resizeMode="contain" />
-      <Text style={styles.screenText}>Welcome to Extreme Fit</Text>
+      <SignedIn>
+        <Text style={styles.screenText}>
+          Hello {user?.emailAddresses[0].emailAddress}
+        </Text>
+        <SignOutButton />
+      </SignedIn>
+      <SignedOut>
+        <Text style={styles.screenText}>Welcome to Extreme Fit</Text>
+        <View style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
+          <Link href="/(auth)/sign-in">
+            <Text style={{ color: Colors.darkText }}>Sign in</Text>
+          </Link>
+          <Link href="/(auth)/sign-up">
+            <Text style={{ color: Colors.darkText }}>Sign up</Text>
+          </Link>
+        </View>
+      </SignedOut>
     </View>
   );
 }

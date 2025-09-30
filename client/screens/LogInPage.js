@@ -1,92 +1,67 @@
-import React, { useState } from 'react';
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, ScrollView } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import Colors from '../colors';
+import { useSignIn } from '@clerk/clerk-expo'
+import { Link, useRouter } from 'expo-router'
+import { Text, TextInput, TouchableOpacity, View } from 'react-native'
+import React from 'react'
 
-export default function LogInPage({ navigation }) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+export default function Page() {
+  const { signIn, setActive, isLoaded } = useSignIn()
+  const router = useRouter()
 
-  const handleLogin = () => {
-    // Aquí iría la lógica de autenticación
-    alert('Logged in!');
-    navigation && navigation.navigate('Main');
-  };
+  const [emailAddress, setEmailAddress] = React.useState('')
+  const [password, setPassword] = React.useState('')
+
+  // Handle the submission of the sign-in form
+  const onSignInPress = async () => {
+    if (!isLoaded) return
+
+    // Start the sign-in process using the email and password provided
+    try {
+      const signInAttempt = await signIn.create({
+        identifier: emailAddress,
+        password,
+      })
+
+      // If sign-in process is complete, set the created session as active
+      // and redirect the user
+      if (signInAttempt.status === 'complete') {
+        await setActive({ session: signInAttempt.createdSessionId })
+        router.replace('/')
+      } else {
+        // If the status isn't complete, check why. User might need to
+        // complete further steps.
+        console.error(JSON.stringify(signInAttempt, null, 2))
+      }
+    } catch (err) {
+      // See https://clerk.com/docs/guides/development/custom-flows/error-handling
+      // for more info on error handling
+      console.error(JSON.stringify(err, null, 2))
+    }
+  }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.title}>Log In</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Email"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Password"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-        />
-        <TouchableOpacity style={styles.button} onPress={handleLogin}>
-          <Text style={styles.buttonText}>Log In</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => navigation && navigation.goBack()}>
-          <Text style={styles.linkText}>Back to Welcome</Text>
-        </TouchableOpacity>
-      </ScrollView>
-    </SafeAreaView>
-  );
+    <View>
+      <Text>Sign in</Text>
+      <TextInput
+        autoCapitalize="none"
+        value={emailAddress}
+        placeholder="Enter email"
+        onChangeText={(emailAddress) => setEmailAddress(emailAddress)}
+      />
+      <TextInput
+        value={password}
+        placeholder="Enter password"
+        secureTextEntry={true}
+        onChangeText={(password) => setPassword(password)}
+      />
+      <TouchableOpacity onPress={onSignInPress}>
+        <Text>Continue</Text>
+      </TouchableOpacity>
+      <View style={{ display: 'flex', flexDirection: 'row', gap: 3 }}>
+        <Text>Don't have an account?</Text>
+        <Link href="/sign-up">
+          <Text>Sign up</Text>
+        </Link>
+      </View>
+    </View>
+  )
 }
-
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: Colors.lightBackground,
-  },
-  container: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: Colors.mainColor,
-    marginBottom: 24,
-  },
-  input: {
-    width: '100%',
-    maxWidth: 350,
-    backgroundColor: Colors.whiteBackground,
-    borderRadius: 10,
-    padding: 14,
-    fontSize: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: Colors.lightBorder,
-  },
-  button: {
-    backgroundColor: Colors.mainColor,
-    paddingVertical: 14,
-    paddingHorizontal: 40,
-    borderRadius: 30,
-    marginTop: 10,
-    marginBottom: 20,
-  },
-  buttonText: {
-    color: Colors.whiteText,
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  linkText: {
-    color: Colors.mainColor,
-    fontSize: 16,
-    textDecorationLine: 'underline',
-  },
-});
