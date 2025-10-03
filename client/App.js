@@ -8,12 +8,18 @@ import WelcomeScreen from './screens/Welcome';
 import CreateAccountPage from './screens/CreateAccountPage';
 import LogInPage from './screens/LogInPage';
 import Navbar from './components/Navbar';
+import ForgotPasswordPage from './screens/ForgotPasswordPage';
 
 const Stack = createStackNavigator();
 
 export default function App() {
   return (
-    <ClerkProvider tokenCache={tokenCache}>
+    <ClerkProvider
+      tokenCache={tokenCache}
+      frontendApi={process.env.EXPO_PUBLIC_CLERK_FRONTEND_API} // <--- Add this
+      publishableKey={process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY} // optional, if you want
+    >
+      
       <NavigationContainer>
         <Stack.Navigator
           initialRouteName="Welcome"
@@ -23,6 +29,7 @@ export default function App() {
           <Stack.Screen name="CreateAccountPage" component={CreateAccountPage} />
           <Stack.Screen name="LogInPage" component={LogInPage} />
           <Stack.Screen name="Main" component={Navbar} />
+          <Stack.Screen name="ForgotPasswordPage" component={ForgotPasswordPage} />
         </Stack.Navigator>
       </NavigationContainer>
     </ClerkProvider>

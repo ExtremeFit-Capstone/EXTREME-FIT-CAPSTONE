@@ -1,67 +1,87 @@
-import { useSignIn } from '@clerk/clerk-expo'
-import { Link, useRouter } from 'expo-router'
-import { Text, TextInput, TouchableOpacity, View } from 'react-native'
-import React from 'react'
+import React from 'react';
+import { Text, TextInput, TouchableOpacity, View, ActivityIndicator } from 'react-native';
+import { useSignIn, useUser } from '@clerk/clerk-expo';
+import { useNavigation } from '@react-navigation/native'; // useNavigation instead of useRouter
 
-export default function Page() {
-  const { signIn, setActive, isLoaded } = useSignIn()
-  const router = useRouter()
+export default function LogInPage() {
+  const { signIn, setActive, isLoaded } = useSignIn();
+  const { isSignedIn } = useUser();
+  const navigation = useNavigation(); // get navigation object
 
-  const [emailAddress, setEmailAddress] = React.useState('')
-  const [password, setPassword] = React.useState('')
+  const [emailAddress, setEmailAddress] = React.useState('');
+  const [password, setPassword] = React.useState('');
+  const [loading, setLoading] = React.useState(false);
+  const [errorMessage, setErrorMessage] = React.useState('');
 
-  // Handle the submission of the sign-in form
+  // Redirect if already signed in
+  React.useEffect(() => {
+    if (isSignedIn) {
+      navigation.replace('Main'); // use navigation.replace for signed-in redirect
+    }
+  }, [isSignedIn]);
+
   const onSignInPress = async () => {
-    if (!isLoaded) return
+    if (!isLoaded || loading) return;
 
-    // Start the sign-in process using the email and password provided
+    setLoading(true);
+    setErrorMessage('');
+
     try {
       const signInAttempt = await signIn.create({
         identifier: emailAddress,
         password,
-      })
+      });
 
-      // If sign-in process is complete, set the created session as active
-      // and redirect the user
       if (signInAttempt.status === 'complete') {
-        await setActive({ session: signInAttempt.createdSessionId })
-        router.replace('/')
+        await setActive({ session: signInAttempt.createdSessionId });
+        navigation.replace('Main');
       } else {
-        // If the status isn't complete, check why. User might need to
-        // complete further steps.
-        console.error(JSON.stringify(signInAttempt, null, 2))
+        console.error(JSON.stringify(signInAttempt, null, 2));
+        setErrorMessage('Sign-in incomplete. Check your credentials.');
       }
     } catch (err) {
-      // See https://clerk.com/docs/guides/development/custom-flows/error-handling
-      // for more info on error handling
-      console.error(JSON.stringify(err, null, 2))
+      console.error(JSON.stringify(err, null, 2));
+      setErrorMessage(err.errors?.[0]?.longMessage || 'Sign-in failed');
+    } finally {
+      setLoading(false);
     }
-  }
+  };
 
   return (
-    <View>
-      <Text>Sign in</Text>
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <Text style={{ fontSize: 20, marginBottom: 10 }}>Sign in</Text>
+      {errorMessage ? <Text style={{ color: 'red', marginBottom: 10 }}>{errorMessage}</Text> : null}
+
       <TextInput
         autoCapitalize="none"
         value={emailAddress}
         placeholder="Enter email"
-        onChangeText={(emailAddress) => setEmailAddress(emailAddress)}
+        onChangeText={setEmailAddress}
+        style={{ width: '80%', marginVertical: 5, borderWidth: 1, padding: 8 }}
       />
       <TextInput
         value={password}
         placeholder="Enter password"
         secureTextEntry={true}
-        onChangeText={(password) => setPassword(password)}
+        onChangeText={setPassword}
+        style={{ width: '80%', marginVertical: 5, borderWidth: 1, padding: 8 }}
       />
-      <TouchableOpacity onPress={onSignInPress}>
-        <Text>Continue</Text>
+
+      <TouchableOpacity
+        onPress={onSignInPress}
+        disabled={loading}
+        style={{ marginVertical: 10, padding: 10, backgroundColor: 'lightblue', width: '80%', alignItems: 'center' }}
+      >
+        {loading ? <ActivityIndicator /> : <Text>Continue</Text>}
       </TouchableOpacity>
-      <View style={{ display: 'flex', flexDirection: 'row', gap: 3 }}>
-        <Text>Don't have an account?</Text>
-        <Link href="/sign-up">
-          <Text>Sign up</Text>
-        </Link>
-      </View>
+
+      {/* Forgot Password link */}
+      <TouchableOpacity 
+        onPress={() => navigation.navigate('ForgotPasswordPage')} // Navigate to forgot password screen
+        style={{ marginTop: 10 }}
+      >
+        <Text style={{ color: 'blue', textDecorationLine: 'underline' }}>Forgot Password?</Text>
+      </TouchableOpacity>
     </View>
-  )
+  );
 }
