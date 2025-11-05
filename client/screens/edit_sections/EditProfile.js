@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useIsFocused } from '@react-navigation/native';
 import { useAuth } from '@clerk/clerk-expo';
 import ApiService, { setGlobalAuthToken, API_BASE_URL } from '../../services/api';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Colors from '../../colors';
@@ -76,7 +76,9 @@ export default function EditProfileSection({navigation}) {
 
   // Handlers
   const onEditContact = () => {};
-  const onResetPassword = () => {};
+  const onResetPassword = () => {
+    navigation && navigation.navigate('ChangePassword');
+  };
   const onAddAddress = () => {
     navigation && navigation.navigate('EditAddress');
   };
@@ -147,9 +149,9 @@ export default function EditProfileSection({navigation}) {
               <Text style={styles.fieldValue}>{currentUser?.email || 'Loading...'}</Text>
             </View>
           </View>
-          {/* Reset Password Link */}
+          {/* Change Password Link */}
           <TouchableOpacity style={styles.linkRow} onPress={onResetPassword}>
-            <Text style={styles.linkText}>Reset your password</Text>
+            <Text style={styles.linkText}>Change password</Text>
             <Ionicons name="chevron-forward" size={18} color={Colors.mutedText} />
           </TouchableOpacity>
         </View>

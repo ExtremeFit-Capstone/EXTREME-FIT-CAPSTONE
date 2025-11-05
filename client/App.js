@@ -10,6 +10,7 @@ import ForgotPasswordPage from './screens/ForgotPasswordPage';
 import Navbar from './components/Navbar';
 import EditProfileSection from './screens/edit_sections/EditProfile';
 import EditAddressSection from './screens/edit_sections/EditAddress';
+import ChangePasswordSection from './screens/edit_sections/ChangePassword';
 import ProductDetails from './screens/productDetails';
 import OrderHistoryScreen from './screens/edit_sections/OrderHistory';
 import OrderDetailsSection from './screens/edit_sections/OrderDetails';
@@ -44,6 +45,7 @@ export default function App() {
           <Stack.Screen name="OrderHistory" component={OrderHistoryScreen}options={{ headerShown: false }}/>
           <Stack.Screen name="EditProfile" component={EditProfileSection} />
           <Stack.Screen name="EditAddress" component={EditAddressSection} />
+          <Stack.Screen name="ChangePassword" component={ChangePasswordSection} />
           <Stack.Screen name="ProductDetails" component={ProductDetails} options={{ headerShown: false }}/>
         </Stack.Navigator>
       </NavigationContainer>
