@@ -404,18 +404,19 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
   },
 
-  // NEW: Clear search button styles
-  clearSearchButton: {
+clearSearchButton: {
     backgroundColor: Colors.mainColor,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
+    paddingHorizontal: 28,    
+    paddingVertical: 14,       
+    borderRadius: 50,          
     marginTop: 10,
+    alignSelf: 'center',       
   },
 
   clearSearchButtonText: {
     color: Colors.whiteBackground,
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: '600',
+    textAlign: 'center'
   },
-});
+  });
