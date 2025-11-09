@@ -337,7 +337,7 @@ const deleteProduct = async (req, res) => {
   }
 };
 
-// SEARCH products - STRICT PRODUCT TYPE + COLOR MATCHING WITH DEBUG
+// SEARCH products - FUZZY SEARCH WITH PREFIX MATCHING
 const searchProducts = async (req, res) => {
   try {
     const { q, gender, color } = req.query;
@@ -377,12 +377,19 @@ const searchProducts = async (req, res) => {
         }
       });
       
-      // Check if it's a product type (more lenient - 60% threshold for typos and partials)
+      // Check if it's a product type with multiple strategies
       productTypeKeywords.forEach(typeKey => {
         const similarity = calculateSimilarity(word, typeKey);
         
-        // Lower threshold allows "hood" → "hoodie", "haadie" → "hoodie"
+        // Strategy 1: Fuzzy matching (60% threshold for typos like "haadie" → "hoodie")
         if (similarity >= 0.60) {
+          if (!detectedProductTypes.includes(typeKey)) {
+            detectedProductTypes.push(typeKey);
+          }
+        }
+        
+        // Strategy 2: Prefix matching (for short queries like "l" → "leggings", "leg" → "leggings")
+        if (word.length >= 1 && typeKey.startsWith(word)) {
           if (!detectedProductTypes.includes(typeKey)) {
             detectedProductTypes.push(typeKey);
           }
@@ -412,7 +419,18 @@ const searchProducts = async (req, res) => {
       // 1. CHECK PRODUCT TYPE (REQUIRED if specified)
       if (hasProductTypeFilter) {
         const productTypeMatches = detectedProductTypes.some(typeWord => {
-          return nameWords.some(nameWord => calculateSimilarity(typeWord, nameWord) >= 0.75);
+          // Check if any product name word matches the detected type (fuzzy or prefix)
+          return nameWords.some(nameWord => {
+            // Fuzzy match (for typos)
+            if (calculateSimilarity(typeWord, nameWord) >= 0.75) {
+              return true;
+            }
+            // Prefix match (for partial words like "leg" → "leggings")
+            if (nameWord.startsWith(typeWord)) {
+              return true;
+            }
+            return false;
+          });
         });
         
         if (!productTypeMatches) {
@@ -459,11 +477,18 @@ const searchProducts = async (req, res) => {
       searchWords.forEach(searchWord => {
         let bestMatchForThisWord = 0;
         
-        // Check name words
+        // Check name words with FUZZY + PREFIX matching
         nameWords.forEach(nameWord => {
+          // Standard fuzzy similarity
           const similarity = calculateSimilarity(searchWord, nameWord);
           if (similarity > bestMatchForThisWord) {
             bestMatchForThisWord = similarity;
+          }
+          
+          // PREFIX BOOST: If name word starts with search word, give high score
+          // This makes "l" match "leggings", "leg" match "leggings", etc.
+          if (nameWord.startsWith(searchWord)) {
+            bestMatchForThisWord = Math.max(bestMatchForThisWord, 0.95); // Very high score for prefix match
           }
         });
         
@@ -475,11 +500,16 @@ const searchProducts = async (req, res) => {
           }
         });
         
-        // Check description
+        // Check description words with PREFIX matching too
         descWords.forEach(descWord => {
           const similarity = calculateSimilarity(searchWord, descWord);
           if (similarity > bestMatchForThisWord) {
             bestMatchForThisWord = similarity;
+          }
+          
+          // PREFIX BOOST for description too
+          if (descWord.startsWith(searchWord)) {
+            bestMatchForThisWord = Math.max(bestMatchForThisWord, 0.95);
           }
         });
         
