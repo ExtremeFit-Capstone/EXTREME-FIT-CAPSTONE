@@ -44,7 +44,7 @@ exports.createPaymentIntent = async (req, res) => {
       // Optional: pre-fill customer email
       receipt_email: order.email,
       description: `Order #${order_id} - ExtremeFit`,
-      // Automatic payment methods - enables Apple Pay, Google Pay automatically
+      // Enable all automatic payment methods (Card, Apple Pay, Google Pay, Klarna, Afterpay, Cash App, etc.)
       automatic_payment_methods: {
         enabled: true,
       },

@@ -11,6 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Colors from '../colors';
 import ApiService from '../services/api';
+import { color } from '@cloudinary/url-gen/qualifiers/background';
 
 export default function OrderSuccessScreen({ route, navigation }) {
   const { orderId } = route.params || {};
@@ -298,7 +299,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   primaryButtonText: {
-    color: '#fff',
+    color: Colors.mainColor,
     fontSize: 16,
     fontWeight: 'bold',
   },

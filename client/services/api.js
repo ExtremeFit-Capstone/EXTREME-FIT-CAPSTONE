@@ -43,9 +43,11 @@ console.log("API Base URL:", API_BASE_URL);
 // Generic API request function with JWT authentication
 const apiRequest = async (endpoint, options = {}) => {
   const url = `${API_BASE_URL}${endpoint}`;
+  console.log('🌐 API Request:', options.method || 'GET', url);
 
   // Use the globally set token
   const token = globalToken;
+  console.log('🔑 Token present:', !!token);
 
   const config = {
     headers: {
@@ -266,7 +268,10 @@ export const ApiService = {
   cart: {
     // Get cart items by user ID
     get: async (userId) => {
-      return await apiRequest(`/api/cart/${userId}`);
+      console.log('📞 Calling cart API for userId:', userId);
+      const result = await apiRequest(`/api/cart/${userId}`);
+      console.log('📦 Cart API response:', JSON.stringify(result).substring(0, 200));
+      return result;
     },
 
     // Add item to cart
