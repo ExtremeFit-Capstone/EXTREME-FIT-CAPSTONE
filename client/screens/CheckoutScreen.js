@@ -166,6 +166,16 @@ export default function CheckoutScreen({ route, navigation }) {
       } else {
         // Payment succeeded!
         console.log('✅ Payment succeeded!');
+
+        // Clear cart in backend after successful payment (same as Pay Now button)
+        try {
+          await ApiService.cart.clear(userId);
+          console.log('🛒 Cart cleared after successful payment');
+        } catch (cartError) {
+          console.error('❌ Failed to clear cart:', cartError);
+          // Continue anyway - payment was successful
+        }
+
         Alert.alert(
           'Payment Successful',
           'Your order has been confirmed!',
