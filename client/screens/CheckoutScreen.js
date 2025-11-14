@@ -105,14 +105,14 @@ export default function CheckoutScreen({ route, navigation }) {
           email: order?.email || undefined,
         },
         // Enable Apple Pay and Google Pay
-        applePay: {
-          merchantCountryCode: 'US',
-        },
-        googlePay: {
-          merchantCountryCode: 'US',
-          testEnv: __DEV__, // Use test environment in development
-          currencyCode: 'USD',
-        },
+        // applePay: {
+        //   merchantCountryCode: 'US',
+        // },
+        // googlePay: {
+        //   merchantCountryCode: 'US',
+        //   testEnv: __DEV__, // Use test environment in development
+        //   currencyCode: 'USD',
+        // },
         // Customize appearance
         appearance: {
           colors: {
@@ -258,26 +258,6 @@ export default function CheckoutScreen({ route, navigation }) {
               >
                 <Ionicons name="card" size={24} color={Colors.primary} />
                 <Text style={styles.paymentText}>Credit or Debit Card</Text>
-                <Ionicons name="chevron-forward" size={20} color={Colors.gray} style={{ marginLeft: 'auto' }} />
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.paymentOption}
-                onPress={handlePayment}
-                disabled={!paymentReady || loading}
-              >
-                <Ionicons name="logo-apple" size={24} color={Colors.dark} />
-                <Text style={styles.paymentText}>Apple Pay</Text>
-                <Ionicons name="chevron-forward" size={20} color={Colors.gray} style={{ marginLeft: 'auto' }} />
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.paymentOption}
-                onPress={handlePayment}
-                disabled={!paymentReady || loading}
-              >
-                <Ionicons name="logo-google" size={24} color={Colors.primary} />
-                <Text style={styles.paymentText}>Google Pay</Text>
                 <Ionicons name="chevron-forward" size={20} color={Colors.gray} style={{ marginLeft: 'auto' }} />
               </TouchableOpacity>
 
