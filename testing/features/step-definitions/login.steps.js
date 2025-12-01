@@ -1,3 +1,9 @@
+const { Given, When, Then } = require('@wdio/cucumber-framework');
+const { expect, $ } = require('@wdio/globals');
+
+const TEST_EMAIL = "jose.quinones27@upr.edu";
+const TEST_PASSWORD = "JLQV@12345";
+
 //--------------------------------------------------------
 // LogIn Steps
 //--------------------------------------------------------
@@ -34,13 +40,15 @@ When(/^I tap the login submit button$/, async () => {
     await loginButton.waitForDisplayed({ timeout: 10000 });
     await loginButton.click();
     await browser.pause(1000);
-
+    
+    // Tap again if needed (sometimes first tap doesn't register)
     const stillVisible = await loginButton.isDisplayed().catch(() => false);
     if (stillVisible) {
         await loginButton.click();
         await browser.pause(1000);
     }
-
+    
+    // Wait longer for auth to complete
     await browser.pause(8000);
 });
 
@@ -74,7 +82,8 @@ Then(/^I should be logged into the app$/, async () => {
 
 Then(/^I should see the home screen$/, async () => {
     await browser.pause(5000);
-
+    
+    // Look for text that appears on home screen
     const homeText = await $('//*[contains(@text, "Loading categories") or contains(@text, "No categories") or contains(@text, "men") or contains(@text, "women")]');
     await homeText.waitForDisplayed({ timeout: 20000 });
     await expect(homeText).toBeDisplayed();

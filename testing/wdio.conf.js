@@ -23,7 +23,8 @@ exports.config = {
     //
     specs: [
         './features/login.feature',
-        './features/shop.feature'
+        './features/home.feature',
+        './features/wishlist.feature'
     ],
     // Patterns to exclude.
     exclude: [
@@ -95,11 +96,11 @@ exports.config = {
     // baseUrl: 'http://localhost:8080',
     //
     // Default timeout for all waitFor* commands.
-    waitforTimeout: 10000,
+    waitforTimeout: 5000,
     //
     // Default timeout in milliseconds for request
     // if browser driver or grid doesn't send response
-    connectionRetryTimeout: 120000,
+    connectionRetryTimeout: 60000,
     //
     // Default request retries count
     connectionRetryCount: 3,
@@ -136,7 +137,12 @@ exports.config = {
     // If you are using Cucumber you need to specify the location of your step definitions.
     cucumberOpts: {
         // <string[]> (file/dir) require files before executing features
-        require: ['./features/step-definitions/*.js'],
+         require: [
+        './features/step-definitions/login.steps.js',
+        './features/step-definitions/wishlist.steps.js',
+        './features/step-definitions/home.steps.js'
+        ],
+
         // <boolean> show full backtrace for errors
         backtrace: false,
         // <string[]> ("extension:module") require files with the given EXTENSION after requiring MODULE (repeatable)
