@@ -24,6 +24,7 @@ exports.config = {
     specs: [
         './features/login.feature',
         './features/home.feature',
+        './features/shop.feature',
         './features/wishlist.feature'
     ],
     // Patterns to exclude.
@@ -140,6 +141,7 @@ exports.config = {
          require: [
         './features/step-definitions/login.steps.js',
         './features/step-definitions/wishlist.steps.js',
+        './features/step-definitions/shop.steps.js',
         './features/step-definitions/home.steps.js'
         ],
 

@@ -1,4 +1,4 @@
-const { Given, When, Then } = require('@wdio/cucumber-framework');
+const { Given, When, Then, Before } = require('@wdio/cucumber-framework');
 const { expect, $ } = require('@wdio/globals');
 
 const TEST_EMAIL = "jose.quinones27@upr.edu";

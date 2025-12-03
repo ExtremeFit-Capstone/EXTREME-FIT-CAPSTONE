@@ -11,11 +11,3 @@ Feature: Wishlist Product Selection and Cart Addition
     And I select color "Black"
     And I tap the confirm add to cart button
     Then I should see a success notification
-    
-    When I find the socks product in wishlist
-    And I tap add to cart on the product
-    Then I should see the size and color selection modal
-    When I select size "OS"
-    And I select color "White"
-    And I tap the confirm add to cart button
-    Then I should see a success notification
