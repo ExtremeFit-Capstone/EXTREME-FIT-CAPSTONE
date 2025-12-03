@@ -1,4 +1,5 @@
 const getDb = () => (global && global.__DB_MOCK__) ? global.__DB_MOCK__ : require('../config/database');
+const { clerkClient } = require('@clerk/clerk-sdk-node');
 
 /**
  * Middleware to get user from database using clerk_id from Clerk JWT
@@ -28,15 +29,31 @@ const getClerkUser = async (req, res, next) => {
       console.log('🔄 Auto-creating user in database...');
 
       try {
-        // Create user with minimal info (webhook will update later if needed)
+        // Fetch full user data from Clerk API
+        let clerkUser;
+        try {
+          clerkUser = await clerkClient.users.getUser(clerkId);
+        } catch (clerkErr) {
+          console.warn('⚠️ Could not fetch user from Clerk API:', clerkErr.message);
+          clerkUser = null;
+        }
+
+        // Extract user info from Clerk user object or fallback to defaults
+        const firstName = clerkUser?.firstName || 'User';
+        const lastName = clerkUser?.lastName || 'Pending Sync';
+        const email = clerkUser?.emailAddresses?.[0]?.emailAddress || `pending-${clerkId}@clerk.sync`;
+
+        console.log(`🔐 Creating user with: firstName="${firstName}", lastName="${lastName}", email="${email}"`);
+
         await getDb().query(`
           INSERT INTO users (clerk_id, email, first_name, last_name, created_at)
           VALUES ($1, $2, $3, $4, NOW())
+          ON CONFLICT (clerk_id) DO NOTHING
         `, [
           clerkId,
-          'pending@clerk.sync',  // Placeholder email
-          'User',                 // Placeholder first name
-          'Pending Sync',         // Placeholder last name
+          email,                 // Use Clerk email
+          firstName,             // Use Clerk first name
+          lastName,              // Use Clerk last name
         ]);
 
         // Fetch the newly created user
@@ -48,6 +65,21 @@ const getClerkUser = async (req, res, next) => {
         console.log('✅ User auto-created:', result.rows[0]);
       } catch (createError) {
         console.error('❌ Failed to auto-create user:', createError);
+
+        // If it's a duplicate key error, try to fetch the existing user
+        if (createError.code === '23505') {
+          result = await getDb().query(
+            'SELECT * FROM users WHERE clerk_id = $1',
+            [clerkId]
+          );
+
+          if (result && result.rows.length > 0) {
+            console.log('✅ User already exists, using existing record');
+            req.user = result.rows[0];
+            return next();
+          }
+        }
+
         return res.status(500).json({ error: 'Could not create user in database' });
       }
     } else {
