@@ -1,4 +1,4 @@
-const db = require("../config/database");
+const getDb = () => (global && global.__DB_MOCK__) ? global.__DB_MOCK__ : require("../config/database");
 
 const getWishlistItem = async (req, res) => {
   try {
@@ -11,7 +11,7 @@ const getWishlistItem = async (req, res) => {
       });
     }
 
-    const result = await db.query(
+  const result = await getDb().query(
       `
       SELECT wishlist_id, user_id, product_id, added_at FROM wishlist WHERE user_id = $1 ORDER BY added_at
     `,
@@ -35,7 +35,7 @@ const getWishlistItem = async (req, res) => {
     console.error("❌ Error fetching wishlist items:", error);
     res.status(500).json({
       success: false,
-      error: error.message,
+      error: error.message || 'Internal server error',
     });
   }
 };
@@ -58,7 +58,7 @@ const getWishlistItemById = async (req, res) => {
       });
     }
 
-    const result = await db.query(
+  const result = await getDb().query(
       `
       SELECT * FROM wishlist WHERE user_id = $1 AND product_id = $2
     `,
@@ -75,7 +75,7 @@ const getWishlistItemById = async (req, res) => {
     console.error("❌ Error fetching wishlist item:", error);
     res.status(500).json({
       success: false,
-      error: error.message,
+      error: error.message || 'Internal server error',
     });
   }
 };
@@ -94,7 +94,7 @@ const deleteWishlistItem = async (req, res) => {
       });
     }
 
-    const result = await db.query(
+  const result = await getDb().query(
       "DELETE FROM wishlist WHERE user_id = $1 AND product_id = $2 RETURNING *",
       [user_id, product_id]
     );
@@ -116,15 +116,15 @@ const deleteWishlistItem = async (req, res) => {
     console.error("Error deleting product:", error);
     res.status(500).json({
       success: false,
-      error: error.message,
+      error: error.message || 'Internal server error',
     });
   }
 };
 
 const addWishlistItem = async (req, res) => {
   try {
-    user_id = req.body.userId;
-    product_id = req.body.productId;
+    const user_id = req.body.userId;
+    const product_id = req.body.productId;
 
     if (isNaN(user_id) || isNaN(product_id)) {
       return res.status(400).json({
@@ -133,7 +133,7 @@ const addWishlistItem = async (req, res) => {
       });
     }
 
-    const result = await db.query(
+  const result = await getDb().query(
       "INSERT INTO wishlist (user_id, product_id) VALUES ($1, $2) RETURNING *;",
       [user_id, product_id]
     );
@@ -146,13 +146,10 @@ const addWishlistItem = async (req, res) => {
     console.log("✅ Added to wishlist.");
   } catch (error) {
     console.error("Error adding to wishlist:", error);
-
     res.status(500).json({
       success: false,
-      error: error.message,
+      error: error.message || 'Internal server error',
     });
-
-    console.log("❌ Failed to add to wishlist.");
   }
 };
 

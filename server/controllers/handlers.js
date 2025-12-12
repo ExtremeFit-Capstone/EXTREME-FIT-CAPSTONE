@@ -1,15 +1,30 @@
-const db = require("../config/database");
+// Lazily resolve DB so tests can inject a mock into global.__DB_MOCK__
+// after modules are loaded. Using a getter avoids require-order issues
+// where modules import the real DB before Jest's setupFiles can inject
+// mocks into require.cache.
+let _dbOverride = null;
+const setDb = (db) => {
+  _dbOverride = db;
+};
+const resetDb = () => {
+  _dbOverride = null;
+};
+
+const getDb = () => {
+  if (_dbOverride) return _dbOverride;
+  if (global && global.__DB_MOCK__) return global.__DB_MOCK__;
+  return require("../config/database");
+};
 
 // GET all users
 const getUsers = async (req, res) => {
   try {
-    const result = await db.query(`
+        const result = await getDb().query(`
       SELECT 
         user_id, 
         first_name, 
         last_name, 
         email, 
-        phone, 
         created_at, 
         updated_at 
       FROM users 
@@ -33,14 +48,13 @@ const getUserById = async (req, res) => {
       return res.status(400).json({ error: "Invalid user ID" });
     }
 
-    const result = await db.query(
+        const result = await getDb().query(
       `
       SELECT 
         user_id, 
         first_name, 
         last_name, 
-        email, 
-        phone, 
+        email,
         created_at, 
         updated_at 
       FROM users 
@@ -65,7 +79,7 @@ const postUser = async (req, res) => {
   try {
     console.log("Received request body:", req.body);
 
-    const { first_name, last_name, email, password_hash, phone } =
+    const { first_name, last_name, email, password_hash} =
       req.body || {};
 
     if (!first_name?.trim() || !email?.trim()) {
@@ -81,18 +95,17 @@ const postUser = async (req, res) => {
       });
     }
 
-    const result = await db.query(
+        const result = await getDb().query(
       `
-      INSERT INTO users (first_name, last_name, email, password_hash, phone) 
+      INSERT INTO users (first_name, last_name, email, password_hash) 
       VALUES ($1, $2, $3, $4, $5) 
-      RETURNING user_id, first_name, last_name, email, phone, created_at
+      RETURNING user_id, first_name, last_name, email, created_at
     `,
       [
         first_name.trim(),
         (last_name || "").trim(),
         email.trim(),
-        password_hash || "temp_hash",
-        (phone || "").trim(),
+        password_hash || "temp_hash"
       ]
     );
 
@@ -117,7 +130,7 @@ const postUser = async (req, res) => {
 const updateUser = async (req, res) => {
   try {
     const { id } = req.params;
-    const { first_name, last_name, phone } = req.body || {};
+    const { first_name, last_name} = req.body || {};
 
     // Validate ID is a number
     if (isNaN(id)) {
@@ -125,7 +138,7 @@ const updateUser = async (req, res) => {
     }
 
     // Check if user exists
-    const checkUser = await db.query(
+        const checkUser = await getDb().query(
       "SELECT user_id FROM users WHERE user_id = $1",
       [id]
     );
@@ -150,12 +163,6 @@ const updateUser = async (req, res) => {
       paramCount++;
     }
 
-    if (phone !== undefined) {
-      updateFields.push(`phone = $${paramCount}`);
-      values.push(phone);
-      paramCount++;
-    }
-
     if (updateFields.length === 0) {
       return res.status(400).json({ error: "No fields to update" });
     }
@@ -167,10 +174,10 @@ const updateUser = async (req, res) => {
       UPDATE users 
       SET ${updateFields.join(", ")}, updated_at = CURRENT_TIMESTAMP 
       WHERE user_id = $${paramCount} 
-      RETURNING user_id, first_name, last_name, email, phone, updated_at
+      RETURNING user_id, first_name, last_name, email, updated_at
     `;
 
-    const result = await db.query(query, values);
+        const result = await getDb().query(query, values);
 
     res.json({
       message: "User updated successfully",
@@ -192,7 +199,7 @@ const deleteUser = async (req, res) => {
       return res.status(400).json({ error: "Invalid user ID" });
     }
 
-    const result = await db.query(
+        const result = await getDb().query(
       `
       DELETE FROM users 
       WHERE user_id = $1 
@@ -224,4 +231,4 @@ const deleteUser = async (req, res) => {
   }
 };
 
-module.exports = { getUsers, getUserById, postUser, updateUser, deleteUser };
+module.exports = { getUsers, getUserById, postUser, updateUser, deleteUser, setDb, resetDb };

@@ -10,13 +10,19 @@ export const setGlobalAuthToken = (token) => {
 };
 
 const USE_NGROK = true;
-// API Configuration with improved network detection
+const FORCE_PRODUCTION = false; 
+
 const getApiUrl = () => {
+  if (FORCE_PRODUCTION) {
+    console.log('⚠️ FORCE_PRODUCTION enabled - using production API');
+    return "https://extreme-fit-capstone-backend.vercel.app";
+  }
+
   if (__DEV__) {
     if (USE_NGROK) {
       return 'https://unpaining-cris-scorningly.ngrok-free.dev'; //TODO: replace with your ngrok URL
     }
-    
+
     const debuggerHost = Constants.expoConfig?.hostUri?.split(':')[0];
     if (debuggerHost && debuggerHost !== 'localhost' && debuggerHost !== '127.0.0.1') {
       console.log('Using Expo debugger host:', debuggerHost);
@@ -26,37 +32,54 @@ const getApiUrl = () => {
     console.log("Falling back to localhost");
     return "http://localhost:5001";
   }
-  return "https://your-production-api.com";
+
+  console.log('🚀 Using production API');
+  return "https://extreme-fit-capstone-backend.vercel.app";
 };
 
-const API_BASE_URL = getApiUrl();
+// Make base URL overridable at runtime (useful when ngrok URL changes)
+let API_BASE_URL = getApiUrl();
+export const setApiBaseUrl = (url) => {
+  API_BASE_URL = url;
+  console.log('🔁 API base URL overridden:', url);
+};
 console.log("API Base URL:", API_BASE_URL);
 
 // Generic API request function with JWT authentication
 const apiRequest = async (endpoint, options = {}) => {
-  const url = `${API_BASE_URL}${endpoint}`;
+  const base = options.baseUrl || API_BASE_URL;
+  const url = `${base}${endpoint}`;
+  console.log(`📡 API Request: ${options.method || 'GET'} ${url}`);
 
-  // Use the globally set token
-  const token = globalToken;
+  // Token resolution order: options.token > options.headers.Authorization > globalToken
+  const resolvedToken =
+    options.token ||
+    (options.headers && (options.headers.Authorization || options.headers.authorization)) ||
+    globalToken;
+
+  // Normalize headers and inject Authorization only if not already present
+  const headers = {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+    'ngrok-skip-browser-warning': 'true',
+    ...options.headers,
+  };
+  if (resolvedToken && !headers.Authorization && !headers.authorization) {
+    headers.Authorization = `Bearer ${resolvedToken}`;
+  }
 
   const config = {
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      'ngrok-skip-browser-warning': 'true',
-      ...(token && { 'Authorization': `Bearer ${token}` }),
-      ...options.headers,
-    },
+    headers,
     timeout: 10000, // 10 second timeout
     ...options,
   };
 
-  if (config.body && typeof config.body === "object") {
+  // Only stringify plain objects (avoid double-stringify)
+  if (config.body && typeof config.body === "object" && !(config.body instanceof String)) {
     config.body = JSON.stringify(config.body);
   }
 
   try {
-    console.log(`API Request: ${config.method || "GET"} ${url}`);
 
     const response = await Promise.race([
       fetch(url, config),
@@ -65,17 +88,47 @@ const apiRequest = async (endpoint, options = {}) => {
       ),
     ]);
 
-    const data = await response.json();
+    // Try to get response text first
+    const responseText = await response.text();
 
-    if (!response.ok) {
-      throw new Error(data.error || `HTTP error! status: ${response.status}`);
+    // Try to parse as JSON
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (parseError) {
+      // Return a structured error when server responds with non-JSON
+      console.error('❌ Failed to parse JSON response:', parseError.message);
+      console.error('Response received (truncated):', responseText.substring(0, 200));
+      return {
+        success: false,
+        error: `Server returned non-JSON response: ${responseText.substring(0, 200)}`,
+        originalResponse: responseText,
+        status: response.status,
+      };
     }
 
-    console.log(`API Success: ${endpoint}`);
+    if (!response.ok) {
+      console.error(`❌ API Error (${response.status}):`, data.error || data);
+      return {
+        success: false,
+        error: data.error || data.message || `HTTP error! status: ${response.status}`,
+        status: response.status,
+        originalResponse: responseText,
+      };
+    }
+
     // Backend returns {success: true, data: ...}, so just return it as-is
+    // Ensure data has expected properties to avoid undefined errors
+    if (!data || typeof data !== 'object') {
+      console.warn('⚠️ Unexpected response format from API:', data);
+      return {
+        success: true,
+        data: data,
+      };
+    }
     return data;
   } catch (error) {
-    console.error(`API Error for ${endpoint}:`, error.message);
+    console.error(`❌ API Error for ${endpoint}:`, error.message);
 
     // Provide helpful error messages for common issues
     let userFriendlyMessage = error.message;
@@ -193,15 +246,42 @@ export const ApiService = {
       });
     },
 
-    search: async (query) => {
-      return await apiRequest(
-        `/api/products/search?q=${encodeURIComponent(query)}`
-      );
+    // UPGRADED: Search products with fuzzy matching and optional filters
+    search: async (query, options = {}) => {
+      // Build query parameters
+      const params = new URLSearchParams();
+      
+      // Required: search query
+      params.append('q', query);
+      
+      // Optional: gender filter
+      if (options.gender) {
+        params.append('gender', options.gender);
+      }
+      
+      // Optional: color filter
+      if (options.color) {
+        params.append('color', options.color);
+      }
+      
+      // Optional: threshold (default is 0.5 in backend)
+      if (options.threshold !== undefined) {
+        params.append('threshold', options.threshold);
+      }
+      
+      return await apiRequest(`/api/products/search?${params.toString()}`);
     },
 
     // Get products by category
     getByCategory: async (categoryId) => {
       return await apiRequest(`/api/products/category/${categoryId}`);
+    },
+    // Adjust stock for a product (size-based). payload: { size, quantity, operation }
+    adjustStock: async (productId, payload) => {
+      return await apiRequest(`/api/products/${productId}/adjust-stock`, {
+        method: 'POST',
+        body: payload,
+      });
     },
   },
 
@@ -323,6 +403,13 @@ export const ApiService = {
       });
     },
 
+    // Set an address as the default (uses server endpoint that doesn't require full payload)
+    setDefault: async (addressId) => {
+      return await apiRequest(`/api/addresses/${addressId}/set-default`, {
+        method: 'PUT',
+      });
+    },
+
     // Delete an address
     delete: async (addressId) => {
       return await apiRequest(`/api/addresses/${addressId}`, {
@@ -342,6 +429,30 @@ export const ApiService = {
       return await apiRequest(`/api/categories/${gender}`);
     },
   },
+
+  // Payments Management
+
+payments: {
+  // Create PaymentIntent for mobile Payment Sheet
+  createPaymentIntent: async (orderId) => {
+    return await apiRequest('/api/payments/create-payment-intent', {
+      method: 'POST',
+      body: { order_id: orderId },
+    });
+  },
+
+  // Create Checkout Session (for web, kept for reference)
+  createCheckoutSession: async (orderId, cancelUrl, successUrl) => {
+    return await apiRequest('/api/payments/create-checkout-session', {
+      method: 'POST',
+      body: {
+        order_id: orderId,
+        cancel_url: cancelUrl,
+        success_url: successUrl,
+      },
+    });
+  },
+},
 };
 
 // Export base URL for direct access if needed
